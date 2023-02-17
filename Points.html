@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+
+      margin: 0;
+      overflow: hidden;
+      background-color: #aaaaaa;
+      background-attachment: fixed !important;
+    }
+  </style>
+  <style>
+    body {
+      font-family: Monospace;
+      margin: 0px;
+      overflow: hidden;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container"></div>
+
+  <script type="x-shader/x-vertex" id="VertexShader">
+		uniform sampler2D tex;
+		varying vec3 color;
+    varying vec3 xyzcolor;
+    varying vec3 lincolor;
+    varying vec3 xyycolor;
+    uniform float scale;
+    varying float sum;
+    uniform int option;
+    varying vec3 finalcolor;
+    
+		void main() {
+      color = texture2D ( tex, position.xy ).rgb;
+      mat3 M = mat3(0.4124, 0.2126,0.0193,
+      0.3576,0.7152,0.1192,
+      0.1805,0.0722,0.9505);
+
+
+      /*red color*/
+    if(color.x<=0.04045){
+      lincolor.x = color.x/12.92;
+    }
+    else{
+      lincolor.x = pow(((color.x+0.055)/1.055), 2.4);
+    }
+    /*green color*/
+    if(color.y<=0.04045){
+      lincolor.y = color.y/12.92;
+    }
+    else{
+      lincolor.y = pow(((color.y+0.055)/1.055), 2.4);
+    }
+    /*blue color*/
+    if(color.z<=0.04045){
+      lincolor.z = color.z/12.92;
+    }
+    else{
+      lincolor.z = pow(((color.z+0.055)/1.055), 2.4);
+    }
+      
+    
+    xyzcolor = M*lincolor;
+    sum = xyzcolor.x+xyzcolor.y+xyzcolor.z;
+    xyycolor.x = xyzcolor.x/sum;
+    xyycolor.y = xyzcolor.y/sum;
+    xyycolor.z = xyzcolor.z;
+
+    if (option ==0){
+      finalcolor = color;
+    }
+    else if (option == 1){
+      finalcolor = xyzcolor;
+    }
+    else{
+      finalcolor = xyycolor;
+    }
+    vec4 mvPosition = modelViewMatrix * vec4(finalcolor-vec3(scale)+vec3(5,0,0), 1.0);
+
+    gl_PointSize = -9.0/(mvPosition.z );
+    gl_Position = projectionMatrix * mvPosition;
+		}
+	</script>
+
+  <script type="x-shader/x-vertex" id="shadVertexShader">
+		uniform sampler2D tex;
+		varying vec3 color;
+    varying vec3 xyzcolor;
+    varying vec3 lincolor;
+    varying vec3 xyycolor;
+    uniform float scale;
+    varying float sum;
+    uniform int option;
+    varying vec3 finalcolor;
+    
+		void main() {
+      color = texture2D ( tex, position.xy ).rgb;
+      mat3 M = mat3(0.4124, 0.2126,0.0193,
+      0.3576,0.7152,0.1192,
+      0.1805,0.0722,0.9505);
+
+
+      /*red color*/
+    if(color.x<=0.04045){
+      lincolor.x = color.x/12.92;
+    }
+    else{
+      lincolor.x = pow(((color.x+0.055)/1.055), 2.4);
+    }
+    /*green color*/
+    if(color.y<=0.04045){
+      lincolor.y = color.y/12.92;
+    }
+    else{
+      lincolor.y = pow(((color.y+0.055)/1.055), 2.4);
+    }
+    /*blue color*/
+    if(color.z<=0.04045){
+      lincolor.z = color.z/12.92;
+    }
+    else{
+      lincolor.z = pow(((color.z+0.055)/1.055), 2.4);
+    }
+      
+    
+    xyzcolor = M*lincolor;
+    sum = xyzcolor.x+xyzcolor.y+xyzcolor.z;
+    xyycolor.x = xyzcolor.x/sum;
+    xyycolor.y = xyzcolor.y/sum;
+    xyycolor.z = xyzcolor.y;
+
+    if (option ==0){
+      finalcolor = color;
+    }
+    else if (option == 1){
+      finalcolor = xyzcolor;
+    }
+    else{
+      finalcolor = xyycolor;
+    }
+    vec4 mvPosition = modelViewMatrix * vec4(finalcolor.xyz-vec3(scale,finalcolor.y,scale)-vec3(0.0,scale,0.0), 1.0);
+    gl_PointSize = -9.0/(mvPosition.z );
+    gl_Position = projectionMatrix * mvPosition;
+		}
+  </script>
+
+
+
+  <script type="x-shader/x-fragment" id="RGBFragmentShader">
+		varying vec3 color;
+    uniform float scale;
+    uniform float density;
+
+		void main() {
+      float l = length( gl_PointCoord - vec2(0.5,0.5 ));
+			if ( l > 0.475 ) discard;
+			gl_FragColor.rgb = color;
+			gl_FragColor.a = (density-l)/10.0;
+      
+		}
+	</script>
+  <script type="x-shader/x-fragment" id="shadFragmentShader">
+		varying vec3 color;
+    uniform float scale;
+    uniform float density;
+
+		void main() {
+      float l = length( gl_PointCoord - vec2(0.5,0.5 ));
+			if ( l > 0.475 ) discard;
+			gl_FragColor.rgb =vec3(0,0,0);
+			gl_FragColor.a = (density-l)/10.0;
+      
+		}
+	</script>
+
+  <script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+  <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.148.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.148.0/examples/jsm/"
+        }
+      }
+    </script>
+
+  <script type="module">
+    import * as THREE from "three";
+    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+    import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+    import Stats from 'three/addons/libs/stats.module.js';
+
+
+    var camera, controls, scene, renderer, container;
+    var plan;
+    let shadpoints, points, stats;
+    let ColorSpace;
+
+
+    // VIDEO AND THE ASSOCIATED TEXTURE
+    var video, videoTexture;
+
+    init();
+    animate();
+
+    function init() {
+      container = document.createElement("div");
+      document.body.appendChild(container);
+
+      scene = new THREE.Scene();
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.autoClear = false;
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = false;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+
+      container.appendChild(renderer.domElement);
+      stats = new Stats();
+      container.appendChild(stats.dom);
+
+      camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.001,
+        10
+      );
+      camera.position.z = 4;
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.minDistance = 0.0005;
+      controls.maxDistance = 10;
+      controls.enableRotate = true;
+      controls.addEventListener("change", render);
+      controls.update();
+
+
+      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        const constraints = {
+          video: { width: 1920, height: 1080, facingMode: "user" },
+        };
+        navigator.mediaDevices
+          .getUserMedia(constraints)
+          .then(function (stream) {
+            video = document.createElement("video");
+            video.srcObject = stream;
+            video.play();
+
+
+            video.onloadeddata = function () {
+              videoTexture = new THREE.VideoTexture(video);
+              videoTexture.minFilter = THREE.NearestFilter;
+              videoTexture.magFilter = THREE.NearestFilter;
+              videoTexture.generateMipmaps = false;
+              videoTexture.format = THREE.RGBAFormat;
+              videoTexture.encoding = THREE.sRGBEncoding;
+              const scale = video.videoHeight / video.videoWidth
+              scene.background = videoTexture;
+
+              video.play();
+
+
+              var discret = 1;
+
+              const density = 0.2;
+
+              /////////////////////////////////////POINT SHADER ////////////////////////////////////
+              var colorSpaceMaterial = new THREE.ShaderMaterial({
+                vertexShader: document.getElementById('VertexShader').textContent,
+                fragmentShader: document.getElementById('RGBFragmentShader').textContent,
+                uniforms: {
+                  tex: { value: videoTexture },
+                  scale: { value: scale },
+                  option: { value: ColorSpace },
+                  density: { value: 0.4 }
+                },
+                blending: THREE.AdditiveBlending,
+                depthTest: false,
+                transparent: true
+              });
+
+
+              /////////////////////////////////////SHADOW SHADER ////////////////////////////////////
+
+              var shadowSpaceMaterial = new THREE.ShaderMaterial({
+                vertexShader: document.getElementById('shadVertexShader').textContent,
+                fragmentShader: document.getElementById('shadFragmentShader').textContent,
+                uniforms: {
+                  tex: { value: videoTexture },
+                  scale: { value: scale },
+                  option: { value: ColorSpace },
+                  density: { value: 0.4 }
+                },
+                blending: THREE.AdditiveBlending,
+                depthTest: false,
+                transparent: true
+              });
+              //////////////////////////////////////// GUI //////////////////////////////////////////              
+              var gui = new GUI();
+              const obj = { ColorSpace: 0, density: 0.4 }
+              gui.add(obj, "ColorSpace", [0, 1, 2]).onChange(function (value) {
+                colorSpaceMaterial.uniforms.option = value;
+                shadowSpaceMaterial.uniforms.option = value;
+              }).name("Colour Space");
+              gui.add(obj, "density", 0, 2).onChange(function (value) {
+                colorSpaceMaterial.uniforms.density = value;
+                shadowSpaceMaterial.uniforms.density = value;
+              }).name("Density Factor");
+
+              // gui.add(ColorSpace,  [0, 1, 2]).name("ColorSpace");
+              gui.add(shadowSpaceMaterial.uniforms.option, "value", [0, 1, 2]).name("Shadow Space");
+              gui.add(colorSpaceMaterial.uniforms.density, "value", 0.1, 1.0).name("Density");
+              gui.add(shadowSpaceMaterial.uniforms.density, "value", 0.1, 1.0).name("Shadow Density");
+
+              /////////////////////////////HISTOGRAM////////////////////////////////////////
+              const canvas = document.createElement('canvas'),
+                ctx = canvas.getContext('2d');
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              ctx.drawImage(videoTexture.image, 0, 0);
+              const texture_canvas = new THREE.CanvasTexture(canvas);
+              const data = texture_canvas.image.data;
+              const rgbaData = ctx.getImageData(0, 0, 600, 400).data;
+              const red = [];
+              const blue = [];
+              const green = [];
+              const alpha = [];
+              console.log(rgbaData.length)
+              // for (let index = 0; index < rgbaData.length; index = index + 4) {
+              //   red.push(rgbaData[index]);
+              //   blue.push(rgbaData[index + 1]);
+              //   green.push(rgbaData[index + 2]);
+              //   alpha.push(rgbaData[index + 3]);
+              // }
+              // console.log(red);
+              // let red_channel = new Array(256).fill(0);
+              // let green_channel = new Array(256).fill(0);
+              // let blue_channel = new Array(256).fill(0);
+
+              // for (let i = 0; i < red.length; i++) {
+              //   red_channel[red[i]] += 1;
+              //   green_channel[green[i]] += 1;
+              //   blue_channel[blue[i]] += 1;
+              // }
+              // console.log(red_channel)
+              // // normalization
+              // const maxred = red_channel.reduce((a, b) => Math.max(a, b), -Infinity);
+              // const maxblue = blue_channel.reduce((a, b) => Math.max(a, b), -Infinity);
+              // const maxgreen = green_channel.reduce((a, b) => Math.max(a, b), -Infinity);
+              // for (let i = 0; i < maxred; i++) {
+              //   red_channel[i] = 5 * red_channel[i] / maxred
+              // }
+              // for (let i = 0; i < maxblue; i++) {
+              //   blue_channel[i] = 5 * blue_channel[i] / maxblue
+              // }
+              // for (let i = 0; i < maxgreen; i++) {
+              //   green_channel[i] = 5 * green_channel[i] / maxgreen
+              // }
+              // // red plot
+              // for (let i = 0; i < 256; i++) {
+
+              //   const red_geo = new THREE.PlaneGeometry(0.1, red_channel[i]);
+              //   const blue_geo = new THREE.PlaneGeometry(0.1, blue_channel[i]);
+              //   const green_geo = new THREE.PlaneGeometry(0.1, green_channel[i]);
+              //   const mat_red = new THREE.MeshBasicMaterial({ color: 0xff0000, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, })
+              //   const mat_blue = new THREE.MeshBasicMaterial({ color: 0x0000ff, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, })
+              //   const mat_green = new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, })
+              //   const red_plane = new THREE.Mesh(red_geo, mat_red);
+              //   const green_plane = new THREE.Mesh(green_geo, mat_green);
+              //   const blue_plane = new THREE.Mesh(blue_geo, mat_blue);
+              //   red_plane.position.x = 3 - i / 100;
+              //   blue_plane.position.x = 3 - i / 100;
+              //   green_plane.position.x = 3 - i / 100;
+              //   scene.add(red_plane);
+              //   scene.add(blue_plane);
+              //   scene.add(green_plane);
+
+              // }
+
+
+
+              ///////////////////////////////// BOX ///////////////////////////////////////////////
+              {
+                const BoxGeom = new THREE.BoxGeometry(scale * 2, scale * 2, scale * 2);
+                const Boxm = new THREE.MeshBasicMaterial({
+                  opacity: 0.1,
+                  transparent: true,
+                  color: 0x000000
+                })
+                const Box = new THREE.Mesh(BoxGeom, Boxm);
+                Box.position.x = 5
+                Box.position.y = 0
+                Box.position.z = 0
+                scene.add(Box);
+              }
+              ////////////////////////////////// AXES ////////////////////////////////////////////
+              function axes(color, Theta1, Theta2, x, y, z) {
+                const geom = new THREE.PlaneGeometry(scale * 2, 0);
+                const mat = new THREE.LineBasicMaterial();
+                mat.color.setHex(color);
+                const mesh = new THREE.Line(geom, mat)
+                mesh.position.x = x;
+                mesh.position.y = y;
+                mesh.position.z = z;
+                mesh.rotation.x = Theta1;
+                mesh.rotation.y = Theta2
+                scene.add(mesh);
+              }
+              axes(0xff0000, 0, 0, 5, -scale, -scale)
+              axes(0x00ff00, Math.PI / 2, Math.PI / 2, 5 - scale, 0, -scale)
+              axes(0x0000ff, 0, Math.PI / 2, 5 - scale, -scale, 0)
+              /////////////////////////////POINTS//////////////////////////////////////////////////
+              const geometry = new THREE.BufferGeometry();
+              const positions = [];
+              let compteur = 0;
+              for (let i = 0; i < video.videoHeight; i += discret)
+                for (let j = 0; j < video.videoWidth; j += discret) {
+                  // positions
+
+                  const x = (i) / video.videoHeight;
+                  const y = (j) / video.videoWidth;
+                  const z = 0;
+
+                  positions.push(x, y, z);
+                  compteur++;
+                }
+              const shadowgeom = new THREE.BufferGeometry();
+              const positionshad = [];
+              let disc = 1;
+              let comp = 0;
+              for (let i = 0; i < video.videoHeight; i += disc)
+                for (let j = 0; j < video.videoWidth; j += disc) {
+                  // positions
+
+                  const x = (i) / video.videoHeight;
+                  const y = (j) / video.videoWidth;
+                  const z = 0;
+
+                  positionshad.push(x, y, z);
+                  comp++;
+                }
+
+              geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+              geometry.computeBoundingSphere();
+              shadowgeom.setAttribute('position', new THREE.Float32BufferAttribute(positionshad, 3));
+              shadowgeom.computeBoundingSphere();
+
+
+              points = new THREE.Points(geometry, colorSpaceMaterial);
+              scene.add(points);
+
+              shadpoints = new THREE.Points(shadowgeom, shadowSpaceMaterial);
+              scene.add(shadpoints);
+            };
+
+            window.addEventListener("resize", onWindowResize, false);
+          });
+      }
+    }
+
+
+
+    function render() {
+
+      renderer.clear();
+      renderer.render(scene, camera);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      stats.update();
+      render();
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      render();
+    }
+  </script>
+</body>
+
+</html>
